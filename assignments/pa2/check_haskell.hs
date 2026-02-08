@@ -32,4 +32,5 @@ secret_message = map xk xj  where
     xi a as = a : map (+ a) as
     xj = foldr xi [] xh
     xk a = toEnum a `asTypeOf` hh where (hh:tt) = xg
-    xl
+    xl = hh where (hh:tt) = xf
+

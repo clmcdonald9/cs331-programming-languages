@@ -13,4 +13,25 @@ writing a lexer in lua
 ### lexemes
 no delimiter between lexemes
 comments like multiline c comments
- 
+
+what happens when you read past the end of input
+
+string func sub to get single chars out of the input string
+
+
+function skipToNextLexeme.
+
+move pos to begin of next lex, skipping comments and  white space between comments
+
+
+
+### debug stuff
+invariants are statements that are always true at a certain point
+
+assert, pass a bool to it, if the expression is false, then crash, else, do nothing
+
+debug vs release builds
+release avoids debugging info
+release has more aggressive optimization
+release has no asserts
+

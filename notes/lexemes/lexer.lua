@@ -1,9 +1,18 @@
 -- lexer.lua  UNFINISHED
+-- VERSION 2
 -- Glenn G. Chappell
--- 2026-02-03
+-- Started: 2026-02-03
+-- Updated: 2026-02-04
 --
 -- For CS 331 Spring 2026
 -- In-Class Lexer Module
+
+-- History:
+-- - v1:
+--   - Framework written. Lexer treats every character as punctuation.
+-- - v2:
+--   - Add state LETTER, with handler. Write skipToNextLexeme. Add
+--     comment on invariants.
 
 -- Usage:
 --
@@ -144,6 +153,9 @@ function lexer.lex(program)
     -- ***** Variables (like class data members) *****
 
     local pos       -- Index of next character in program
+                    -- INVARIANT: when getLexeme is called, pos is
+                    --  EITHER the index of the first character of the
+                    --  next lexeme OR program:len()+1
     local state     -- Current state for our state machine
     local ch        -- Current character
     local lexstr    -- The lexeme, so far
@@ -154,6 +166,10 @@ function lexer.lex(program)
 
     local DONE   = 0
     local START  = 1
+    local LETTER = 2
+    local DIGIT = 3
+    local DIGDOT = 4
+    local DOT = 5
 
     -- ***** Character-Related Utility Functions *****
 
@@ -163,6 +179,14 @@ function lexer.lex(program)
     -- past the end.
     local function currChar()
         return program:sub(pos, pos)
+    end
+
+    -- nextChar
+    -- Return the next character, at index pos+1 in program. Return
+    -- value is a single-character string, or the empty string if pos+1
+    -- is past the end.
+    local function nextChar()
+        return program:sub(pos+1, pos+1)
     end
 
     -- drop1
@@ -183,7 +207,31 @@ function lexer.lex(program)
     -- Skip whitespace and comments, moving pos to the beginning of
     -- the next lexeme, or to program:len()+1.
     local function skipToNextLexeme()
-        -- WRITE THIS!!!
+        while true do
+            -- Skip whitespace characters
+            while isWhitespace(currChar()) do
+                drop1()
+            end
+
+            -- Done if no comment
+            if currChar() ~= "/" or nextChar() ~= "*" then
+                break
+            end
+
+            -- Skip comment
+            drop1()  -- Drop leading "/"
+            drop1()  -- Drop leading "*"
+            while true do
+                if currChar() == "*" and nextChar() == "/" then
+                    drop1()  -- Drop trailing "*"
+                    drop1()  -- Drop trailing "/"
+                    break
+                elseif currChar() == "" then  -- End of input?
+                   return
+                end
+                drop1()  -- Drop character inside comment
+            end
+        end
     end
 
     -- ***** State-Handler Functions *****
@@ -198,25 +246,78 @@ function lexer.lex(program)
 
     -- State START: no character read yet.
     local function handle_START()
-        -- This isn't right, is it?!!!
-        if isLetter(ch) or
-        add1()
-        state = DONE
-        category = lexer.PUNCT
+        if isLetter(ch) or ch == "_" then
+            add1()
+            state = LETTER
+        elseif isDigit(ch) then
+            add1()
+            state = DIGIT
+        elseif ch == "." then
+            add1()
+            state = DOT
+        elseif ch == "+" then
+            add1()
+        else
+            add1()
+            state = DONE
+            category = lexer.PUNCT
+        end
     end
 
-    -- ***** Table of State-Handler Functions *****
-
+    -- State LETTER: we are in an ID.
     local function handle_LETTER()
-        if isLetter(ch) or ch == "_" or isDigit(ch)
-        then
+        if isLetter(ch) or ch == "_" or isDigit(ch) then
             add1()
         else
             state = DONE
+            if lexstr == "begin" or lexstr == "end"
+              or lexstr == "print" then
+                category = lexer.KEY
+            else
+                category = lexer.ID
+            end
+        end
+    end
+
+    -- state DIGIT
+    local function handle_DIGIT()
+        if isDigit(ch)then
+            add1()
+
+        elseif ch == "." then
+            add()
+            state = DIGDOT
+        else
+            state = Done
+            category = lexer.NUMLIT
+    end
+
+    --state DIGDOT: in num literal and see a dot
+    local function handle_DIGDOT()
+        ifisDigit(ch) then 
+            add1()
+        else
+            state = DONE
+        end
+    end
+
+    -- state DOT
+    local function handle_DOT()
+        if isDigit(ch) then
+            add1()
+            
+        end
+    end
+    -- ***** Table of State-Handler Functions *****
 
     handlers = {
         [DONE]=handle_DONE,
         [START]=handle_START,
+        [LETTER]=handle_LETTER,
+        [DIGIT]=handle_DIGIT,
+        [DIGDOT] = handle_DIGDOT,
+        [DOT] = handle_DOT,
+        [PLUS] = handle_PLUS,
     }
 
     -- ***** Body of Function lex *****
