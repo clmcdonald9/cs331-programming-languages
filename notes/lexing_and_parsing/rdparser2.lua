@@ -1,9 +1,9 @@
--- rdparser1.lua  UNFINISHED
+-- rdparser2.lua  UNFINISHED
 -- Glenn G. Chappell
--- 2026-02-08
+-- 2026-02-10
 --
 -- For CS 331 Spring 2026
--- Recursive-Descent Parser #1: Simple
+-- Recursive-Descent Parser #2: More Complex
 -- Requires lexer.lua
 
 
@@ -12,8 +12,9 @@
 --
 --     item   ->  "(" item ")"
 --             |  args
---     args   ->  NUMLIT
+--     args   ->  NUMLIT { ( "," | ";" ) NUMLIT }
 --             |  "*" "*" "*"
+--             |  ID [ "[" item "]" ]
 
 local lexer = require "lexer"
 
@@ -23,7 +24,7 @@ local lexer = require "lexer"
 -- *********************************************************************
 
 
-local rdparser1 = {}  -- Our module
+local rdparser2 = {}  -- Our module
 
 
 -- *********************************************************************
@@ -122,7 +123,8 @@ end
 -- *********************************************************************
 
 
-local parse_item 
+local parse_item
+local parse_args
 
 
 -- *********************************************************************
@@ -132,16 +134,19 @@ local parse_item
 
 -- parse
 -- Given program, initialize parser and call parsing function for start
--- symbol. Returns a boolean, indicating successful parse or not.
-function rdparser1.parse(prog)
+-- symbol. Returns pair of booleans. First indicates successful parse or
+-- not. Second indicates whether the parser reached the end of the
+-- input or not.
+function rdparser2.parse(prog)
     -- Initialization
     init(prog)
 
-    -- Get result from parsing
+    -- Get results from parsing
     local good = parse_item()  -- Parse start symbol
+    local done = atEnd()
 
-    -- And return it
-    return good
+    -- And return them
+    return good, done
 end
 
 
@@ -165,7 +170,6 @@ end
 -- Parsing function for nonterminal "item".
 -- Function init must be called before this function is called.
 function parse_item()
-    -- TODO: WRITE THIS!!!
     if matchString("(") then
         if not parse_item() then
             return false
@@ -173,25 +177,58 @@ function parse_item()
         if not matchString(")") then
             return false
         end
-        
+        -- We would construct an AST here
         return true
-    
     elseif parse_args() then
+        -- We would construct an AST here
         return true
     else
         return false
     end
-
-    return false  -- DUMMY
 end
 
+
+-- parse_args
+-- Parsing function for nonterminal "args".
+-- Function init must be called before this function is called.
 function parse_args()
-    if matchCat
+    if matchCat(lexer.NUMLIT) then
+        -- We would construct an AST here
+        while matchString(",") or matchString(";") do
+            if not matchCat(lexer.NUMLIT) then
+                return false
+            end
+        end
+        return true
+    elseif matchString("*") then
+        if not matchString("*") then
+            return false
+        end
+        if not matchString("*") then
+            return false
+        end
+        -- We would construct an AST here
+    elseif matchCat(lexer.ID) then
+        if matchString("[") then
+            if not parse_item() then
+                return false
+            end
+            if not matchString("]") then
+                return false
+            end
+        end
+
+        return true
+    else
+        return false
+    end
+end
+
 
 -- *********************************************************************
 -- Module Table Return
 -- *********************************************************************
 
 
-return rdparser1
+return rdparser2
 
