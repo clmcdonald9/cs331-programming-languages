@@ -3,6 +3,12 @@
 -- 2/13/26
 -- a lua module for lexical analysis
 
+-- Acknowledgment:
+-- Professor Glenn G. Chappell's in-class lexer.lua was used as
+-- a guide for the design of lexer.lua
+-- This implementation was written to satisfy assignment 3
+-- Tamandua lexical specification.
+
 lexit = {} -- Module
 
 --Constants: lexeme categories
@@ -28,3 +34,5 @@ lexit.catnames = {
 function lexit.lex(str)
 
 end
+
+return lexit
