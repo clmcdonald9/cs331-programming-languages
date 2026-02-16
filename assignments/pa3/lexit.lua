@@ -5,9 +5,10 @@
 
 -- Acknowledgment:
 -- Professor Glenn G. Chappell's in-class lexer.lua was used as
--- a guide for the design of lexer.lua
+-- a  framework for the design of lexit.lua
 -- This implementation was written to satisfy assignment 3
 -- Tamandua lexical specification.
+
 
 lexit = {} -- Module
 
@@ -32,6 +33,60 @@ lexit.catnames = {
 }
 
 function lexit.lex(str)
+    -- Variables
+    local position
+    local currentLexeme
+
+    -- States
+    local START = 1
+    local DONE = 2
+    
+
+    -- Character functions
+    local function currentChar()
+        return str:sub(position,position)
+    end
+
+    local function nextChar()
+        return str:sub(position+1, position+1)
+    end
+
+    local function nextPosition()
+        position = position + 1
+    end
+
+    local function handle_DONE()
+      --no
+    end
+    local function handle_START()
+        state = DONE
+        nextPosition()
+    end
+
+    local handlers = {
+        [DONE] = handle_DONE,
+        [START] = handle_START,
+        
+    }
+
+    return coroutine.wrap(function()
+        position = 1
+
+        while true do
+            if position > str:len() then
+                return nil
+            end
+
+            currentLexeme = ""
+            state = START
+
+            while state ~= DONE do
+                char = currentChar()
+                handlers[state]()
+
+            end
+        end
+    end)
 
 end
 
