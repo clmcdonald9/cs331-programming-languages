@@ -55,12 +55,34 @@ function lexit.lex(str)
         position = position + 1
     end
 
+    local function addToLexeme()
+        currentLexeme = currentLexeme .. currentChar()
+        nextPosition()
+        print(currentLexeme)
+    end
+
+    local function skipWhitespace()
+        -- skip whitespace
+    end
+
+    local function skipComments()
+        -- skip comments
+    end
+
+    local function skipToNextLexeme()
+        skipComments()
+        skipWhitespace()
+    end
+
     local function handle_DONE()
       --no
     end
     local function handle_START()
-        state = DONE
-        nextPosition()
+        addToLexeme()
+        if position > str:len() then
+            state = DONE
+        end
+
     end
 
     local handlers = {
@@ -74,7 +96,7 @@ function lexit.lex(str)
 
         while true do
             if position > str:len() then
-                return nil
+                return nil, nil
             end
 
             currentLexeme = ""
