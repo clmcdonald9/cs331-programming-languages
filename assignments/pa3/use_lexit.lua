@@ -12,7 +12,7 @@ lexit = require "lexit"
 
 -- Our "program", which is sent to the lexer
 -- Change this string and see what happens.
-program = "println(\"xy+23 = \", xy+23);  # Print something"
+program = "println(\"xy+23 = \", xy+23);  #Print something"
 
 
 -- Print the input ("program")

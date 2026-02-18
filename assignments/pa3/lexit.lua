@@ -10,9 +10,11 @@
 -- Tamandua lexical specification.
 
 
-lexit = {} -- Module
+local lexit = {} -- Module
 
---Constants: lexeme categories
+--------------- Constants ----------------
+
+-- Constants: lexeme categories
 lexit.KEY = 1
 lexit.ID = 2
 lexit.NUMLIT = 3
@@ -32,23 +34,84 @@ lexit.catnames = {
     "Malformed"
 }
 
+local keyword = {
+    ["chr"] = true,
+    ["else"] = true,
+    ["elsif"] = true,
+    ["func"] = true,
+    ["if"] = true,
+    ["print"] = true,
+    ["println"] = true,
+    ["readint"] = true,
+    ["return"] = true,
+    ["rnd"] = true,
+    ["while"] = true,
+}
+
+--------- Functions to determine kind of character -----------
+
+local function isLetter(char)
+    if "A" <= char and char <= "Z" then
+        return true
+    elseif "a" <= char and char <= "z" then
+        return true
+    else
+        return false
+    end
+end
+
+local function isDigit(char)
+    if "9" >= char and char >= "0" then
+        return true
+    else
+        return false
+    end
+
+end
+
+local function isWhitespace(char)
+    if char == " " or char == "\t" or char == "\n"
+    or char == "\v" or char == "\r" or char == "\f" then
+        --print(char .. "is whitespace")
+        return true
+    else
+        return false
+    end
+end
+
+----------------------------------------------------------------
+------------------------ Lexit.lex -----------------------------
+----------------------------------------------------------------
+
 function lexit.lex(str)
     -- Variables
+    local char
     local position
-    local currentLexeme
+    local oldPosition
+    local lexeme
+    local category
 
     -- States
     local START = 1
     local DONE = 2
-    
+    local LETTER = 3
+    local DIGIT = 4
+    local EXPONENT = 5
+    local PLUS = 6
+    local MINUS = 7
+    local DOUBLEQUOTE = 8
+    local SINGLEQUOTE = 9
+    local EQUAL = 10
+    local STAR = 11
+    local BRACKET = 12
 
-    -- Character functions
+    -------------- Character functions -------------
     local function currentChar()
         return str:sub(position,position)
     end
 
-    local function nextChar()
-        return str:sub(position+1, position+1)
+    local function lookAhead(n)
+        return str:sub(position+n, position+n)
     end
 
     local function nextPosition()
@@ -56,60 +119,219 @@ function lexit.lex(str)
     end
 
     local function addToLexeme()
-        currentLexeme = currentLexeme .. currentChar()
+        lexeme = lexeme .. currentChar()
         nextPosition()
-        print(currentLexeme)
     end
 
     local function skipWhitespace()
-        -- skip whitespace
+        while isWhitespace(currentChar()) and position <= str:len() do
+            nextPosition()
+        end
     end
 
     local function skipComments()
-        -- skip comments
+        if currentChar() == "#" then
+            while currentChar() ~= "\n" and position <= str:len() do
+                nextPosition()
+            end
+        end
     end
 
     local function skipToNextLexeme()
-        skipComments()
-        skipWhitespace()
+        while true do
+            oldPosition = position
+
+            skipWhitespace()
+            skipComments()
+
+            if position == oldPosition then
+                break
+            end
+        end
     end
+
+---------------- Handler Functions -----------------
 
     local function handle_DONE()
       --no
     end
+
     local function handle_START()
-        addToLexeme()
-        if position > str:len() then
+        if isLetter(currentChar()) or currentChar() == "_" then
+            addToLexeme()
+            state = LETTER 
+        elseif isDigit(currentChar()) then
+            addToLexeme()
+            state = DIGIT
+        elseif char == "+" then 
+            addToLexeme()
+            state = PLUS
+        elseif char == "-" then
+            addToLexeme()
+            state = MINUS
+        elseif char == '"' then
+            addToLexeme()
+            state = DOUBLEQUOTE
+        elseif char == "'" then
+            addToLexeme()
+            state = SINGLEQUOTE
+        elseif char == "!" or char == "=" or char == ">" or char == "<" then
+            addToLexeme()
+            state = EQUAL
+        elseif char == "&" and lookAhead(1) == "&" then
+            addToLexeme()
+            addToLexeme()
             state = DONE
+            category = lexit.OP
+        elseif char == "|" and lookAhead(1) == "|" then
+            addToLexeme()
+            addToLexeme()
+            state = DONE
+            category = lexit.OP
+        else
+            addToLexeme()
+            state = DONE
+            category = lexit.PUNCT
         end
 
+    end
+
+    local function handle_LETTER()
+        if isLetter(char) or isDigit(char) or char == "_" then
+            addToLexeme()
+        else
+            state = DONE
+            if keyword[lexeme] then
+                category = lexit.KEY
+            else
+                category = lexit.ID
+            end
+        end
+    end
+
+    local function handle_DIGIT()
+        if isDigit(char) then
+            addToLexeme()
+        elseif char == "e" or char == "E" then
+            if isDigit(lookAhead(1)) then
+                addToLexeme()
+                state = EXPONENT
+            elseif lookAhead(1) == "+" and isDigit(lookAhead(2)) then
+                addToLexeme()
+                addToLexeme()
+                state = EXPONENT
+            else
+                state = DONE
+                category = lexit.NUMLIT
+            end
+        else
+        state = DONE
+        category = lexit.NUMLIT
+        end
+    end
+
+    local function handle_EXPONENT()
+        if isDigit(char) then
+            addToLexeme()
+        else
+            state = DONE
+            category = lexit.NUMLIT
+        end
+    end
+
+    local function handle_PLUS()
+        if char == "+" then
+            addToLexeme()
+        end
+        state = DONE
+        category = lexit.OP
+    end
+
+    local function handle_MINUS()
+        if char == "-" then
+            addToLexeme()
+        end
+        state = DONE
+        category = lexit.OP
+    end
+
+    local function handle_DOUBLEQUOTE()
+        if position > str:len() or char == "\n" then
+            state = DONE
+            category = lexit.MAL
+        elseif char ~= '"' then
+            addToLexeme()
+        else
+            addToLexeme()
+            state = DONE
+            category = lexit.STRLIT
+        end
+    end
+
+    local function handle_SINGLEQUOTE()
+        if position > str:len() or char == "\n" then
+            state = DONE
+            category = lexit.MAL
+        elseif char ~= "'" then
+            addToLexeme()
+        else
+            addToLexeme()
+            state = DONE
+            category = lexit.STRLIT
+        end
+    end
+
+    local function handle_EQUAL()
+        if char == "=" then
+            addToLexeme()
+        end
+            state = DONE
+            category = lexit.OP
     end
 
     local handlers = {
         [DONE] = handle_DONE,
         [START] = handle_START,
-        
+        [LETTER] = handle_LETTER,
+        [DIGIT] = handle_DIGIT,
+        [EXPONENT] = handle_EXPONENT,
+        [PLUS] = handle_PLUS,
+        [MINUS] = handle_MINUS,
+        [DOUBLEQUOTE] = handle_DOUBLEQUOTE,
+        [SINGLEQUOTE] = handle_SINGLEQUOTE,
+        [EQUAL] = handle_EQUAL,
+        [STAR] = handle_STAR,
+        [BRACKET] = handle_BRACKET
     }
+
+
+    ----------------- Body of lex -----------------
 
     return coroutine.wrap(function()
         position = 1
 
         while true do
+            skipToNextLexeme()
+
             if position > str:len() then
                 return nil, nil
             end
 
-            currentLexeme = ""
+            lexeme = ""
             state = START
+            category = nil
 
             while state ~= DONE do
                 char = currentChar()
                 handlers[state]()
 
             end
+
+            coroutine.yield(lexeme, category)
         end
     end)
 
 end
+
 
 return lexit
