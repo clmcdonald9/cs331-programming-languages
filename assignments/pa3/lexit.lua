@@ -80,7 +80,7 @@ local function isWhitespace(char)
 end
 
 local function isPrintableASCII(char)
-    if char >= " " or char <= "~" then
+    if char >= " " and char <= "~" then
         return true
     else
         return false
