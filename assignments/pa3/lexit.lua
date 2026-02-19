@@ -5,9 +5,11 @@
 
 -- Acknowledgment:
 -- Professor Glenn G. Chappell's in-class lexer.lua was used as
--- a  framework for the design of lexit.lua
--- This implementation was written to satisfy assignment 3
--- Tamandua lexical specification.
+-- a guide for the design of lexit.lua. specifically, I reused  the
+-- coroutine-iterator based state-machine framework, the handler table, 
+-- and the character classification and lexeme construction utility functions
+-- The tamandua-specific lexeme rules and state transitions were 
+-- written by me to satisfy assignment 3 
 
 
 local lexit = {} -- Module
@@ -72,7 +74,6 @@ end
 local function isWhitespace(char)
     if char == " " or char == "\t" or char == "\n"
     or char == "\v" or char == "\r" or char == "\f" then
-        --print(char .. "is whitespace")
         return true
     else
         return false
@@ -102,16 +103,14 @@ function lexit.lex(str)
 
     -- States
     local START = 1
-    local DONE = 2
-    local LETTER = 3
-    local DIGIT = 4
-    local EXPONENT = 5
-    local PLUS = 6
-    local MINUS = 7
-    local DOUBLEQUOTE = 8
-    local SINGLEQUOTE = 9
-    local EQUAL = 10
-    local BRACKET = 11
+    local LETTER = 2
+    local DIGIT = 3
+    local EXPONENT = 4
+    local PLUS = 5
+    local DOUBLEQUOTE = 6
+    local SINGLEQUOTE = 7
+    local EQUAL = 8
+    local DONE = 9
 
     -------------- Character functions -------------
     local function currentChar()
@@ -120,6 +119,10 @@ function lexit.lex(str)
 
     local function lookAhead(n)
         return str:sub(position+n, position+n)
+    end
+
+    local function lookBack(n)
+        return str:sub(position-n, position-n)
     end
 
     local function nextPosition()
@@ -160,10 +163,6 @@ function lexit.lex(str)
 
 ---------------- Handler Functions -----------------
 
-    local function handle_DONE()
-      --no
-    end
-
     local function handle_START()
         if not isPrintableASCII(char) and not isWhitespace(char) then
             addToLexeme()
@@ -175,12 +174,9 @@ function lexit.lex(str)
         elseif isDigit(currentChar()) then
             addToLexeme()
             state = DIGIT
-        elseif char == "+" then 
+        elseif char == "+" or char == "-" then 
             addToLexeme()
             state = PLUS
-        elseif char == "-" then
-            addToLexeme()
-            state = MINUS
         elseif char == '"' then
             addToLexeme()
             state = DOUBLEQUOTE
@@ -238,6 +234,7 @@ function lexit.lex(str)
             elseif lookAhead(1) == "+" and isDigit(lookAhead(2)) then
                 addToLexeme()
                 addToLexeme()
+                addToLexeme()
                 state = EXPONENT
             else
                 state = DONE
@@ -257,18 +254,11 @@ function lexit.lex(str)
             category = lexit.NUMLIT
         end
     end
-    -- state == PLUS when we have seen "+"
+    -- state == PLUS when we have seen "+" or "-"
     local function handle_PLUS()
-        if char == "+" then
+        if lookBack(1) == "+" and char == "+" then
             addToLexeme()
-        end
-        state = DONE
-        category = lexit.OP
-    end
-
-    -- state == MINUS when we have seen "-"
-    local function handle_MINUS()
-        if char == "-" then
+        elseif lookBack(1) == "-" and char == "-" then
             addToLexeme()
         end
         state = DONE
@@ -312,22 +302,15 @@ function lexit.lex(str)
             category = lexit.OP
     end
 
-    local function handle_BRACKET()
-
-    end
-
     local handlers = {
-        [DONE] = handle_DONE,
         [START] = handle_START,
         [LETTER] = handle_LETTER,
         [DIGIT] = handle_DIGIT,
         [EXPONENT] = handle_EXPONENT,
         [PLUS] = handle_PLUS,
-        [MINUS] = handle_MINUS,
         [DOUBLEQUOTE] = handle_DOUBLEQUOTE,
         [SINGLEQUOTE] = handle_SINGLEQUOTE,
         [EQUAL] = handle_EQUAL,
-        [BRACKET] = handle_BRACKET
     }
 
 
@@ -340,7 +323,7 @@ function lexit.lex(str)
             skipToNextLexeme()
 
             if position > str:len() then
-                return nil, nil
+                return nil
             end
 
             lexeme = ""
