@@ -79,6 +79,14 @@ local function isWhitespace(char)
     end
 end
 
+local function isPrintableASCII(char)
+    if char >= " " or char <= "~" then
+        return true
+    else
+        return false
+    end
+end
+
 ----------------------------------------------------------------
 ------------------------ Lexit.lex -----------------------------
 ----------------------------------------------------------------
@@ -90,6 +98,7 @@ function lexit.lex(str)
     local oldPosition
     local lexeme
     local category
+    local state
 
     -- States
     local START = 1
@@ -102,8 +111,7 @@ function lexit.lex(str)
     local DOUBLEQUOTE = 8
     local SINGLEQUOTE = 9
     local EQUAL = 10
-    local STAR = 11
-    local BRACKET = 12
+    local BRACKET = 11
 
     -------------- Character functions -------------
     local function currentChar()
@@ -157,7 +165,11 @@ function lexit.lex(str)
     end
 
     local function handle_START()
-        if isLetter(currentChar()) or currentChar() == "_" then
+        if not isPrintableASCII(char) and not isWhitespace(char) then
+            addToLexeme()
+            state = DONE
+            category = lexit.MAL
+        elseif isLetter(currentChar()) or currentChar() == "_" then
             addToLexeme()
             state = LETTER 
         elseif isDigit(currentChar()) then
@@ -188,6 +200,11 @@ function lexit.lex(str)
             addToLexeme()
             state = DONE
             category = lexit.OP
+        elseif  char == "*" or char == "/" or char == "%" 
+        or char == "[" or char == "]" then
+            addToLexeme()
+            state = DONE
+            category = lexit.OP
         else
             addToLexeme()
             state = DONE
@@ -196,6 +213,7 @@ function lexit.lex(str)
 
     end
 
+    -- state == LETTER when we have seen a letter or "_"
     local function handle_LETTER()
         if isLetter(char) or isDigit(char) or char == "_" then
             addToLexeme()
@@ -208,7 +226,8 @@ function lexit.lex(str)
             end
         end
     end
-
+    
+    -- state == DIGIT if we have seen a digit
     local function handle_DIGIT()
         if isDigit(char) then
             addToLexeme()
@@ -229,7 +248,7 @@ function lexit.lex(str)
         category = lexit.NUMLIT
         end
     end
-
+    -- state == EXPONENT when we have seen "e" followed by a digit, or a "+" then a digit
     local function handle_EXPONENT()
         if isDigit(char) then
             addToLexeme()
@@ -238,7 +257,7 @@ function lexit.lex(str)
             category = lexit.NUMLIT
         end
     end
-
+    -- state == PLUS when we have seen "+"
     local function handle_PLUS()
         if char == "+" then
             addToLexeme()
@@ -247,6 +266,7 @@ function lexit.lex(str)
         category = lexit.OP
     end
 
+    -- state == MINUS when we have seen "-"
     local function handle_MINUS()
         if char == "-" then
             addToLexeme()
@@ -255,6 +275,7 @@ function lexit.lex(str)
         category = lexit.OP
     end
 
+    -- state == DOUBLEQUOTE when we have seen '"'
     local function handle_DOUBLEQUOTE()
         if position > str:len() or char == "\n" then
             state = DONE
@@ -267,7 +288,8 @@ function lexit.lex(str)
             category = lexit.STRLIT
         end
     end
-
+    
+    -- state == SINGLEQUOTE when we have seen "'"
     local function handle_SINGLEQUOTE()
         if position > str:len() or char == "\n" then
             state = DONE
@@ -281,12 +303,17 @@ function lexit.lex(str)
         end
     end
 
+    -- state == EQUAL when we have seen "=", "!", ">", or "<"
     local function handle_EQUAL()
         if char == "=" then
             addToLexeme()
         end
             state = DONE
             category = lexit.OP
+    end
+
+    local function handle_BRACKET()
+
     end
 
     local handlers = {
@@ -300,7 +327,6 @@ function lexit.lex(str)
         [DOUBLEQUOTE] = handle_DOUBLEQUOTE,
         [SINGLEQUOTE] = handle_SINGLEQUOTE,
         [EQUAL] = handle_EQUAL,
-        [STAR] = handle_STAR,
         [BRACKET] = handle_BRACKET
     }
 
