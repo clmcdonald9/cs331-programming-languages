@@ -4,10 +4,10 @@
 -- a lua module for lexical analysis
 
 -- Acknowledgment:
--- Professor Glenn G. Chappell's in-class lexer.lua was used as
--- a guide for the design of lexit.lua. specifically, I reused  the
--- coroutine-iterator based state-machine framework, the handler table, 
--- and the character classification and lexeme construction utility functions
+-- lexit.lua is based on Professor Glenn G. Chappell's in-class
+-- example, lexer.lua. Specifically, I reused  the
+-- state-machine structure, the coroutine-iterator, and the character
+-- classification and lexeme construction utility functions
 -- The tamandua-specific lexeme rules and state transitions were 
 -- written by me to satisfy assignment 3 
 
