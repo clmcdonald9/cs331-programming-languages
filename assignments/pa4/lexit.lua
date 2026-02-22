@@ -1,7 +1,7 @@
 -- lexit.lua
 -- Crysta McDonald
--- 2/13/26
--- a lua module for lexical analysis
+-- 2/21/26
+-- a lua module for lexical analysis 
 
 -- Acknowledgment:
 -- lexit.lua is based on Professor Glenn G. Chappell's in-class
@@ -92,7 +92,7 @@ end
 ------------------------ Lexit.lex -----------------------------
 ----------------------------------------------------------------
 
-function lexit.lex(str)
+function lexit.lex(program)
     -- Variables
     local char
     local position
@@ -114,15 +114,15 @@ function lexit.lex(str)
 
     -------------- Character functions -------------
     local function currentChar()
-        return str:sub(position,position)
+        return program:sub(position,position)
     end
 
     local function lookAhead(n)
-        return str:sub(position+n, position+n)
+        return program:sub(position+n, position+n)
     end
 
     local function lookBack(n)
-        return str:sub(position-n, position-n)
+        return program:sub(position-n, position-n)
     end
 
     local function nextPosition()
@@ -135,14 +135,14 @@ function lexit.lex(str)
     end
 
     local function skipWhitespace()
-        while isWhitespace(currentChar()) and position <= str:len() do
+        while isWhitespace(currentChar()) and position <= program:len() do
             nextPosition()
         end
     end
 
     local function skipComments()
         if currentChar() == "#" then
-            while currentChar() ~= "\n" and position <= str:len() do
+            while currentChar() ~= "\n" and position <= program:len() do
                 nextPosition()
             end
         end
@@ -267,7 +267,7 @@ function lexit.lex(str)
 
     -- state == DOUBLEQUOTE when we have seen '"'
     local function handle_DOUBLEQUOTE()
-        if position > str:len() or char == "\n" then
+        if position > program:len() or char == "\n" then
             state = DONE
             category = lexit.MAL
         elseif char ~= '"' then
@@ -281,7 +281,7 @@ function lexit.lex(str)
     
     -- state == SINGLEQUOTE when we have seen "'"
     local function handle_SINGLEQUOTE()
-        if position > str:len() or char == "\n" then
+        if position > program:len() or char == "\n" then
             state = DONE
             category = lexit.MAL
         elseif char ~= "'" then
@@ -322,7 +322,7 @@ function lexit.lex(str)
         while true do
             skipToNextLexeme()
 
-            if position > str:len() then
+            if position > program:len() then
                 return nil
             end
 
