@@ -96,42 +96,73 @@ local function matchCategory(category)
     return false
 end
 
+------------ Parsing function declarations ---------------
+
+local parseFactor
+local parseTerm
+local parseArithExpr
+local parseCompareExpr
+local parseExpr
+local parsePrintArg
+local parseStatement
+local parseProgram
 
 ----------------------------------------------------------
 ----------------- Parsing Functions ----------------------
 ----------------------------------------------------------
 
-local function parseFactor()
+function parseFactor()
     return false, nil
 end
 
-local function parseTerm()
+function parseTerm()
     return false, nil
 end
 
-local function parseArithExpr()
+function parseArithExpr()
     return false, nil
 end
 
-local function parseCompareExpr()
+function parseCompareExpr()
     return false, nil
 end
 
-local function parseExpr()
+function parseExpr()
+    if matchCategory(lexit.NUMLIT) then
+        return true, {NUMLIT_VAL, matched}
+    end
     return false, nil
 end
 
-local function parsePrintArg()
+function parsePrintArg()
     local good, ast
 
     if matchCategory(lexit.STRLIT) then
         return true, {STRLIT_OUT, matched}
+
+    elseif matchLexeme("chr") then
+        if not matchLexeme("(") then
+            return false, nil
+        end
+        
+        good, ast = parseExpr()
+        if not good then
+            return false, nil
+        end
+
+        if matchLexeme(")") then
+            if not matchLexeme(";") then
+                return false, nil
+            end
+            return true, {CHR_CALL, ast}
+        end
+        
     else
         return false, nil
     end
 end
 
-local function parseStatement()
+function parseStatement()
     local statementKind
     local good
     local ast1
@@ -195,21 +226,173 @@ local function parseStatement()
 
         return true, {RETURN_STMT, ast1}
 
-    elseif matchLexeme("++") then
+    elseif matchLexeme("++") or matchLexeme("--") then
         good, ast1 = parseExpr()
+        if not good then
+            return false, nil
+        end
+        if not matchLexeme(";") then
+            return false, nil
+        end
 
-        return false, nil
+        if matched == "++" then
+            statementKind = INC_STMT
+        else
+            statementKind = DEC_STMT
+        end
+
+        return true, {statementKind, ast1}
 
     elseif matchCategory(lexit.ID) then
-        return false, nil
-    
+        saveId = matched
+        if matchLexeme("(") then
+            if not matchLexeme(")") then
+                return false, nil
+            end
+            if not matchLexeme(";") then
+                return false, nil
+            end
+
+            return true, {FUNC_CALL, saveId}
+
+        elseif matchLexeme("[") then
+            good, ast1 = parseExpr()
+            if not good then
+                return false, nil
+            end
+
+            while matchLexeme(",") do
+                good, ast2 = parseExpr()
+                if not good then
+                    return false, nil
+                end
+                table.insert(ast1, ast2)
+            end
+
+            if not matchLexeme("]") then
+                return false, nil
+            end
+
+            return true, {ARRAY_REF, saveId, ast1}
+        end
+
+    elseif matchLexeme("func") then
+        if not matchCategory(lexit.ID) then
+            return false, nil
+        else
+            saveId = matched
+        end
+        
+        if not matchLexeme("(") then
+            return false, nil
+        end
+
+        if not matchLexeme(")") then
+            return false, nil
+        end
+
+        if not matchLexeme("{") then
+            return false, nil
+        end
+
+        good, ast1 = parseProgram()
+        if not good then
+            return false, nil
+        end
+
+        if not matchLexeme("}") then
+            return false, nil
+        end
+
+        return true, {FUNC_DEF, saveId, ast1}
+
+    elseif matchLexeme("if") then
+        repeat
+            if not matchLexeme("(") then
+                return false, nil
+            end
+            
+            good, ast2 = parseExpr()
+            if not good then
+                return false, nil
+            end
+
+            ast1 = {IF_STMT, ast2}
+
+            if not matchLexeme(")") then
+                return false, nil
+            end
+
+            if not matchLexeme("{") then
+                return false, nil
+            end
+
+            good, ast2 = parseProgram()
+            if not good then
+                return false, nil
+            end
+
+            table.insert(ast1, ast2)
+
+            if not matchLexeme("}") then
+                return false, nil
+            end
+
+        until not matchLexeme("elsif") 
+
+        if matchLexeme("else") then
+            if not matchLexeme("{") then
+                return false, nil
+            end
+
+            good, ast2 = parseProgram()
+            if not good then
+                return false, nil
+            end
+
+            table.insert(ast1, ast2)
+
+            if not matchLexeme("}") then
+                return false, nil
+            end
+        end
+        
+    elseif matchLexeme("while") then
+        if not matchLexeme("(") then
+            return false, nil
+        end
+
+        good, ast1 = parseExpr()
+        if not good then
+            return false, nil
+        end
+
+        if not matchLexeme(")") then
+            return false, nil
+        end
+
+        if not matchLexeme("{") then
+            return false, nil
+        end
+
+        good, ast2 = parseProgram()
+        if not good then
+            return false, nil
+        end
+        
+        if not matchLexeme("}") then
+            return false, nil
+        end
+
+        return true, {WHILE_LOOP, ast1, ast2}
+
     else
         return false, nil
     end
 
 end
 
-local function parseProgram()
+function parseProgram()
     local ast = {PROGRAM}
     local ast2
     local good
