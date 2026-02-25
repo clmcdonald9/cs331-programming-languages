@@ -307,6 +307,7 @@ function parseStatement()
         return true, {FUNC_DEF, saveId, ast1}
 
     elseif matchLexeme("if") then
+        ast1 = {IF_STMT}
         repeat
             if not matchLexeme("(") then
                 return false, nil
@@ -317,7 +318,7 @@ function parseStatement()
                 return false, nil
             end
 
-            ast1 = {IF_STMT, ast2}
+            table.insert(ast1, ast2)
 
             if not matchLexeme(")") then
                 return false, nil
@@ -356,6 +357,7 @@ function parseStatement()
                 return false, nil
             end
         end
+        return true, ast1
         
     elseif matchLexeme("while") then
         if not matchLexeme("(") then
