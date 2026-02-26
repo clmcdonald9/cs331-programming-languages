@@ -160,6 +160,8 @@ function parseFactor()
             if not matchLexeme(")") then
                 return false
             end
+
+            return true, {FUNC_CALL, saveMatch}
             
         elseif matchLexeme("[") then
 
@@ -167,10 +169,16 @@ function parseFactor()
             if not good then
                 return false, nil
             end
+            
+            if not matchLexeme("]") then
+                return false, nil
+            end
 
+            return true, {ARRAY_VAR, saveMatch, ast}
             
         end
 
+        return true, {SIMPLE_VAR, saveMatch}
 
     end
 end
@@ -194,7 +202,7 @@ function parseTerm()
             return false, nil
         end
 
-        ast1 = {BIN_OP, op, ast1, ast2}
+        ast1 = {{BIN_OP, op}, ast1, ast2}
 
     end
 
@@ -222,7 +230,7 @@ function parseArithExpr()
             return false, nil
         end
 
-        ast1 = {BIN_OP, op, ast1, ast2}
+        ast1 = {{BIN_OP, op}, ast1, ast2}
 
     end
 
@@ -252,7 +260,7 @@ function parseCompareExpr()
             return false, nil
         end
 
-        ast1 = {BIN_OP, op, ast1, ast2}
+        ast1 = {{BIN_OP, op}, ast1, ast2}
 
     end
 
@@ -279,7 +287,7 @@ function parseExpr()
             return false, nil
         end
 
-        ast1 = {BIN_OP, op, ast1, ast2}
+        ast1 = {{BIN_OP, op}, ast1, ast2}
 
     end
 
@@ -381,18 +389,29 @@ function parseStatement()
         return true, {RETURN_STMT, ast1}
 
     elseif matchLexeme("++") or matchLexeme("--") then
-        good, ast1 = parseExpr()
-        if not good then
-            return false, nil
-        end
-        if not matchLexeme(";") then
-            return false, nil
-        end
-
         if matched == "++" then
             statementKind = INC_STMT
         else
             statementKind = DEC_STMT
+        end
+
+        if not matchCategory(lexit.ID) then
+            return false, nil
+        end
+
+        if matchLexeme("[") then
+            good, ast1 = parseExpr()
+            if not good then
+                return false, nil
+            end
+
+            if not matchLexeme("]") then
+                return false, nil
+            end
+        end
+
+        if not matchLexeme(";") then
+            return false, nil
         end
 
         return true, {statementKind, ast1}
