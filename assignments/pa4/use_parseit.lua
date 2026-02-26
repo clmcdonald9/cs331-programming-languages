@@ -140,12 +140,13 @@ function check(program)
     else  -- not good and not done
         io.write("BAD - syntax error\n")
     end
+    printAST(ast)
 end
 
 
 -- Main program
 -- Check several "programs".
-io.write("Recursive-Descent Parser: Fulmar\n")
+--[[io.write("Recursive-Descent Parser: Fulmar\n")
 io.write("\n")
 
 io.write(equals, "\n")
@@ -216,4 +217,7 @@ io.write(" \"BAD - syntax error\"\n")
 io.write(dashes, "\n")
 check("if a){ b")
 io.write(equals, "\n")
+
+]]--
+check("print(1)")
 

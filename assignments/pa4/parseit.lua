@@ -57,7 +57,7 @@ local ARRAY_VAR = 21
 ------------------ Utility Functions ------------------------
 -------------------------------------------------------------
 
-local function nextLexme()
+local function nextLexeme()
     lexOutS, lexOutC  = iter(state, lexOutS)
 
     if lexOutS then
@@ -70,7 +70,7 @@ end
 
 local function init(program)
     iter, state, lexOutS= lexit.lex(program)
-    nextLexme()
+    nextLexeme()
 end
 
 local function atEnd()
@@ -80,7 +80,7 @@ end
 local function matchLexeme(string)
     if lexeme == string then
         matched = lexeme
-        nextLexme()
+        nextLexeme()
         return true
     end
     return false
@@ -90,7 +90,7 @@ end
 local function matchCategory(category)
     if lexCategory == category then
         matched = lexeme
-        nextLexme()
+        nextLexeme()
         return true
     end
     return false
@@ -112,30 +112,184 @@ local parseProgram
 ----------------------------------------------------------
 
 function parseFactor()
-    return false, nil
+    local good
+    local saveMatch
+    local ast
+
+    if matchCategory(lexit.NUMLIT) then
+        return true, {NUMLIT_VAL, matched}
+
+    elseif matchLexeme("(") then
+
+        good, ast = parseExpr()
+        if not good then 
+            return false, nil
+        end
+
+        if not matchLexeme(")") then
+            return false, nil
+        end
+
+        return true, ast
+
+    elseif matchLexeme("+") or matchLexeme("-") or matchLexeme("!") then
+        saveMatch = matched
+
+        good, ast = parseFactor()
+        if not good then
+            return false, nil
+        end
+
+        return true, {{UN_OP, saveMatch}, ast}
+
+    elseif matchLexeme("readint") then
+        if not matchLexeme("(") then
+            return false, nil
+        end
+
+        if not matchLexeme(")") then
+            return false, nil
+        end
+
+        return true, {READ_CALL}
+
+    elseif matchCategory(lexit.ID) then
+        saveMatch = matched
+
+        if matchLexeme("(") then
+            if not matchLexeme(")") then
+                return false
+            end
+            
+        elseif matchLexeme("[") then
+
+            good, ast = parseExpr()
+            if not good then
+                return false, nil
+            end
+
+            
+        end
+
+
+    end
 end
 
 function parseTerm()
-    return false, nil
+    local good
+    local op
+    local ast1
+    local ast2
+
+    good, ast1 = parseFactor()
+    if not good then
+        return false, nil
+    end
+
+    while matchLexeme("*") or matchLexeme("/") or matchLexeme("%") do
+        op = matched
+
+        good, ast2 = parseFactor()
+        if not good then
+            return false, nil
+        end
+
+        ast1 = {BIN_OP, op, ast1, ast2}
+
+    end
+
+    return true, ast1
+
 end
 
 function parseArithExpr()
-    return false, nil
+    local good
+    local op
+    local ast1
+    local ast2
+
+    good, ast1 = parseTerm()
+    if not good then
+        return false, nil
+
+    end
+
+    while matchLexeme("+") or matchLexeme("-") do
+        op = matched
+
+        good, ast2 = parseTerm()
+        if not good then
+            return false, nil
+        end
+
+        ast1 = {BIN_OP, op, ast1, ast2}
+
+    end
+
+    return true, ast1
+
 end
 
 function parseCompareExpr()
-    return false, nil
+    local good
+    local op
+    local ast1
+    local ast2
+
+    good, ast1 = parseArithExpr()
+    if not good then
+        return false, nil
+    end
+
+    while matchLexeme("==") or matchLexeme("!=")
+        or matchLexeme("<") or matchLexeme("<=")
+        or matchLexeme(">") or matchLexeme(">=")
+    do
+        op = matched
+
+        good, ast2 = parseArithExpr()
+        if not good then
+            return false, nil
+        end
+
+        ast1 = {BIN_OP, op, ast1, ast2}
+
+    end
+
+    return true, ast1
+
 end
 
 function parseExpr()
-    if matchCategory(lexit.NUMLIT) then
-        return true, {NUMLIT_VAL, matched}
+    local good
+    local op
+    local ast1
+    local ast2
+
+    good, ast1 = parseCompareExpr()
+    if not good then
+       return false, nil 
     end
-    return false, nil
+
+    while matchLexeme("&&") or matchLexeme("||") do
+        op = matched
+
+        good, ast2 = parseCompareExpr()
+        if not good then
+            return false, nil
+        end
+
+        ast1 = {BIN_OP, op, ast1, ast2}
+
+    end
+
+    return true, ast1
+
 end
 
 function parsePrintArg()
-    local good, ast
+    local good
+    local ast
 
     if matchCategory(lexit.STRLIT) then
         return true, {STRLIT_OUT, matched}
