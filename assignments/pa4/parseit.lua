@@ -244,6 +244,7 @@ function parseStatement()
         return true, {statementKind, ast1}
 
     elseif matchCategory(lexit.ID) then
+        -- need to redo this one, brackets mean optional not one or more
         saveId = matched
         if matchLexeme("(") then
             if not matchLexeme(")") then
@@ -261,13 +262,12 @@ function parseStatement()
                 return false, nil
             end
 
-            while matchLexeme(",") do
-                good, ast2 = parseExpr()
-                if not good then
-                    return false, nil
-                end
-                table.insert(ast1, ast2)
+            good, ast2 = parseExpr()
+            if not good then
+                return false, nil
             end
+            table.insert(ast1, ast2)
+           
 
             if not matchLexeme("]") then
                 return false, nil
