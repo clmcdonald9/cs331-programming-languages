@@ -244,37 +244,58 @@ function parseStatement()
         return true, {statementKind, ast1}
 
     elseif matchCategory(lexit.ID) then
-        -- need to redo this one, brackets mean optional not one or more
         saveId = matched
+
         if matchLexeme("(") then
+            statementKind = FUNC_CALL
+
             if not matchLexeme(")") then
                 return false, nil
             end
+
             if not matchLexeme(";") then
                 return false, nil
             end
 
-            return true, {FUNC_CALL, saveId}
+            return true, {statementKind, saveId}
 
         elseif matchLexeme("[") then
-            good, ast1 = parseExpr()
+            statementKind = ASSN_STMT
+            ast1 = {ARRAY_VAR, saveId}
+
+            good, ast2 = parseExpr()
             if not good then
                 return false, nil
+            end
+
+            table.insert(ast1, ast2)
+
+            if not matchLexeme("]") then
+                return false, nil
+            end
+        end
+
+        if matchLexeme("=") then
+
+            print(statementKind)
+            if statementKind == nil then
+                statementKind = ASSN_STMT
+                ast1 = {SIMPLE_VAR, saveId}
             end
 
             good, ast2 = parseExpr()
             if not good then
                 return false, nil
             end
-            table.insert(ast1, ast2)
-           
 
-            if not matchLexeme("]") then
+            if not matchLexeme(";") then
                 return false, nil
             end
 
-            return true, {ARRAY_REF, saveId, ast1}
+            return true, {statementKind, ast1, ast2}
+
         end
+
 
     elseif matchLexeme("func") then
         if not matchCategory(lexit.ID) then
