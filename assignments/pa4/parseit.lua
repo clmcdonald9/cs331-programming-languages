@@ -66,7 +66,6 @@ local function nextLexeme()
     else               
         lexeme, lexCategory = "", 0
     end
-
 end
 
 local function init(program)
@@ -84,6 +83,7 @@ local function matchLexeme(string)
         nextLexeme()
         return true
     end
+
     return false
 end
 
@@ -94,6 +94,7 @@ local function matchCategory(category)
         nextLexeme()
         return true
     end
+
     return false
 end
 
@@ -121,7 +122,6 @@ function parseFactor()
         return true, {NUMLIT_VAL, matched}
 
     elseif matchLexeme("(") then
-
         good, ast = parseExpr()
         if not good then 
             return false, nil
@@ -175,13 +175,12 @@ function parseFactor()
 
         if matchLexeme("(") then
             if not matchLexeme(")") then
-                return false
+                return false, nil
             end
 
             return true, {FUNC_CALL, saveMatch}
             
         elseif matchLexeme("[") then
-
             good, ast = parseExpr()
             if not good then
                 return false, nil
@@ -197,6 +196,8 @@ function parseFactor()
 
         return true, {SIMPLE_VAR, saveMatch}
 
+    else
+        return false, nil
     end
 end
 
@@ -224,7 +225,6 @@ function parseTerm()
     end
 
     return true, ast
-
 end
 
 function parseArithExpr()
@@ -252,7 +252,6 @@ function parseArithExpr()
     end
 
     return true, ast
-
 end
 
 function parseCompareExpr()
@@ -282,7 +281,6 @@ function parseCompareExpr()
     end
 
     return true, ast
-
 end
 
 function parseExpr()
@@ -309,7 +307,6 @@ function parseExpr()
     end
 
     return true, ast
-
 end
 
 function parsePrintArg()
@@ -334,8 +331,7 @@ function parsePrintArg()
         end
 
         return true, {CHR_CALL, ast}
-
-        
+ 
     else
         good, ast = parseExpr()
         if not good then
@@ -352,7 +348,7 @@ function parseStatement()
     local ast
     local ast2
     local saveId
-    -- note: matchLexeme advances to next lexeme
+    
     if matchLexeme(";") then
         return true, {EMPTY_STMT}
     elseif matchLexeme("print") or matchLexeme("println") then
@@ -496,7 +492,6 @@ function parseStatement()
             end
 
             return true, {statementKind, ast, ast2}
-
         end
 
 
@@ -581,6 +576,7 @@ function parseStatement()
                 return false, nil
             end
         end
+
         return true, ast
         
     elseif matchLexeme("while") then
@@ -615,7 +611,6 @@ function parseStatement()
     else
         return false, nil
     end
-
 end
 
 function parseProgram()
@@ -639,8 +634,8 @@ function parseProgram()
         
         table.insert(ast, ast2)
     end
-    return true, ast
 
+    return true, ast
 end
 
 ----------------------------------------------------------
