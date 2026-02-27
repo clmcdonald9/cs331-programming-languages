@@ -312,15 +312,20 @@ function parsePrintArg()
             return false, nil
         end
 
-        if matchLexeme(")") then
-            if not matchLexeme(";") then
-                return false, nil
-            end
-            return true, {CHR_CALL, ast}
+        if not matchLexeme(")") then
+           return false, nil 
         end
+
+        return true, {CHR_CALL, ast}
+
         
     else
-        return false, nil
+        good, ast = parseExpr()
+        if not good then
+            return false, nil
+        end
+
+        return true, ast
     end
 end
 
@@ -399,8 +404,12 @@ function parseStatement()
             return false, nil
         end
 
+        saveId = matched        
+
         if matchLexeme("[") then
-            good, ast1 = parseExpr()
+            ast1 = {ARRAY_VAR, saveId}
+
+            good, ast2 = parseExpr()
             if not good then
                 return false, nil
             end
@@ -408,6 +417,11 @@ function parseStatement()
             if not matchLexeme("]") then
                 return false, nil
             end
+
+            table.insert(ast1, ast2)
+
+        else
+            ast1 = {SIMPLE_VAR, saveId}
         end
 
         if not matchLexeme(";") then
