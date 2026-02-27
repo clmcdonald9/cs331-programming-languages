@@ -153,6 +153,22 @@ function parseFactor()
 
         return true, {READ_CALL}
 
+    elseif matchLexeme("rnd") then
+        if not matchLexeme("(") then
+            return false, nil
+        end
+
+        good, ast = parseExpr()
+        if not good then
+            return false, nil
+        end
+
+        if not matchLexeme(")") then
+            return false, nil
+        end
+
+        return true, {RND_CALL, ast}
+
     elseif matchCategory(lexit.ID) then
         saveMatch = matched
 
@@ -186,10 +202,10 @@ end
 function parseTerm()
     local good
     local op
-    local ast1
+    local ast
     local ast2
 
-    good, ast1 = parseFactor()
+    good, ast = parseFactor()
     if not good then
         return false, nil
     end
@@ -202,21 +218,21 @@ function parseTerm()
             return false, nil
         end
 
-        ast1 = {{BIN_OP, op}, ast1, ast2}
+        ast = {{BIN_OP, op}, ast, ast2}
 
     end
 
-    return true, ast1
+    return true, ast
 
 end
 
 function parseArithExpr()
     local good
     local op
-    local ast1
+    local ast
     local ast2
 
-    good, ast1 = parseTerm()
+    good, ast = parseTerm()
     if not good then
         return false, nil
 
@@ -230,21 +246,21 @@ function parseArithExpr()
             return false, nil
         end
 
-        ast1 = {{BIN_OP, op}, ast1, ast2}
+        ast = {{BIN_OP, op}, ast, ast2}
 
     end
 
-    return true, ast1
+    return true, ast
 
 end
 
 function parseCompareExpr()
     local good
     local op
-    local ast1
+    local ast
     local ast2
 
-    good, ast1 = parseArithExpr()
+    good, ast = parseArithExpr()
     if not good then
         return false, nil
     end
@@ -260,21 +276,21 @@ function parseCompareExpr()
             return false, nil
         end
 
-        ast1 = {{BIN_OP, op}, ast1, ast2}
+        ast = {{BIN_OP, op}, ast, ast2}
 
     end
 
-    return true, ast1
+    return true, ast
 
 end
 
 function parseExpr()
     local good
     local op
-    local ast1
+    local ast
     local ast2
 
-    good, ast1 = parseCompareExpr()
+    good, ast = parseCompareExpr()
     if not good then
        return false, nil 
     end
@@ -287,11 +303,11 @@ function parseExpr()
             return false, nil
         end
 
-        ast1 = {{BIN_OP, op}, ast1, ast2}
+        ast = {{BIN_OP, op}, ast, ast2}
 
     end
 
-    return true, ast1
+    return true, ast
 
 end
 
@@ -332,7 +348,7 @@ end
 function parseStatement()
     local statementKind
     local good
-    local ast1
+    local ast
     local ast2
     local saveId
     -- note: matchLexeme advances to next lexeme
@@ -361,14 +377,14 @@ function parseStatement()
             return false, nil
         end
 
-        ast1 = {statementKind, ast2}
+        ast = {statementKind, ast2}
 
         while matchLexeme(",") do
             good, ast2 = parsePrintArg()
             if not good then
                 return false, nil
             end
-            table.insert(ast1, ast2)
+            table.insert(ast, ast2)
         end
 
         if not matchLexeme(")") then
@@ -379,10 +395,10 @@ function parseStatement()
             return false, nil
         end
 
-        return true, ast1
+        return true, ast
 
     elseif matchLexeme("return") then
-        good, ast1 = parseExpr()
+        good, ast = parseExpr()
         if not good then
             return false, nil
         end
@@ -391,7 +407,7 @@ function parseStatement()
             return false, nil
         end
 
-        return true, {RETURN_STMT, ast1}
+        return true, {RETURN_STMT, ast}
 
     elseif matchLexeme("++") or matchLexeme("--") then
         if matched == "++" then
@@ -407,7 +423,7 @@ function parseStatement()
         saveId = matched        
 
         if matchLexeme("[") then
-            ast1 = {ARRAY_VAR, saveId}
+            ast = {ARRAY_VAR, saveId}
 
             good, ast2 = parseExpr()
             if not good then
@@ -418,17 +434,17 @@ function parseStatement()
                 return false, nil
             end
 
-            table.insert(ast1, ast2)
+            table.insert(ast, ast2)
 
         else
-            ast1 = {SIMPLE_VAR, saveId}
+            ast = {SIMPLE_VAR, saveId}
         end
 
         if not matchLexeme(";") then
             return false, nil
         end
 
-        return true, {statementKind, ast1}
+        return true, {statementKind, ast}
 
     elseif matchCategory(lexit.ID) then
         saveId = matched
@@ -448,14 +464,14 @@ function parseStatement()
 
         elseif matchLexeme("[") then
             statementKind = ASSN_STMT
-            ast1 = {ARRAY_VAR, saveId}
+            ast = {ARRAY_VAR, saveId}
 
             good, ast2 = parseExpr()
             if not good then
                 return false, nil
             end
 
-            table.insert(ast1, ast2)
+            table.insert(ast, ast2)
 
             if not matchLexeme("]") then
                 return false, nil
@@ -464,10 +480,9 @@ function parseStatement()
 
         if matchLexeme("=") then
 
-            print(statementKind)
             if statementKind == nil then
                 statementKind = ASSN_STMT
-                ast1 = {SIMPLE_VAR, saveId}
+                ast = {SIMPLE_VAR, saveId}
             end
 
             good, ast2 = parseExpr()
@@ -479,7 +494,7 @@ function parseStatement()
                 return false, nil
             end
 
-            return true, {statementKind, ast1, ast2}
+            return true, {statementKind, ast, ast2}
 
         end
 
@@ -503,7 +518,7 @@ function parseStatement()
             return false, nil
         end
 
-        good, ast1 = parseProgram()
+        good, ast = parseProgram()
         if not good then
             return false, nil
         end
@@ -512,10 +527,10 @@ function parseStatement()
             return false, nil
         end
 
-        return true, {FUNC_DEF, saveId, ast1}
+        return true, {FUNC_DEF, saveId, ast}
 
     elseif matchLexeme("if") then
-        ast1 = {IF_STMT}
+        ast = {IF_STMT}
         repeat
             if not matchLexeme("(") then
                 return false, nil
@@ -526,7 +541,7 @@ function parseStatement()
                 return false, nil
             end
 
-            table.insert(ast1, ast2)
+            table.insert(ast, ast2)
 
             if not matchLexeme(")") then
                 return false, nil
@@ -541,7 +556,7 @@ function parseStatement()
                 return false, nil
             end
 
-            table.insert(ast1, ast2)
+            table.insert(ast, ast2)
 
             if not matchLexeme("}") then
                 return false, nil
@@ -559,20 +574,20 @@ function parseStatement()
                 return false, nil
             end
 
-            table.insert(ast1, ast2)
+            table.insert(ast, ast2)
 
             if not matchLexeme("}") then
                 return false, nil
             end
         end
-        return true, ast1
+        return true, ast
         
     elseif matchLexeme("while") then
         if not matchLexeme("(") then
             return false, nil
         end
 
-        good, ast1 = parseExpr()
+        good, ast = parseExpr()
         if not good then
             return false, nil
         end
@@ -594,7 +609,7 @@ function parseStatement()
             return false, nil
         end
 
-        return true, {WHILE_LOOP, ast1, ast2}
+        return true, {WHILE_LOOP, ast, ast2}
 
     else
         return false, nil
