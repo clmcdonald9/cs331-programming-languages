@@ -1,9 +1,11 @@
--- PA5.hs  SKELETON
--- Glenn G. Chappell
--- 2026-03-17
---
--- For CS 331 Spring 2026
--- Solutions to Assignment 5 Exercise B
+-- PA5.hs
+-- Crysta McDonald
+-- Module for CS 331 programming assignment 5
+
+-- start date: 3/19/26
+
+-- PA5.hs was written using Glenn G. Chappells PA5.hs skeleton as a base
+
 
 module PA5 where
 
@@ -13,8 +15,13 @@ module PA5 where
 
 -- collatzCounts
 collatzCounts :: [Integer]
-collatzCounts = [42..]  -- DUMMY; REWRITE THIS!!!
+collatzCounts 
 
+collatz n
+  | n == 1 = 0
+  | even n = 1 + collatzCounts(div n 2)
+  |otherwise = 1 + collatzCounts(3 * n + 1)
+    
 
 -- =====================================================================
 
