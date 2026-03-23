@@ -40,8 +40,11 @@ _ #< [] = 0
 
 -- filterOther
 filterOther :: (a -> Bool) -> [a] -> [b] -> [b]
-filterOther _ _ bs = bs  -- DUMMY; REWRITE THIS!!!
-
+filterOther _ _ [] = []
+filterOther _ [] _ = []
+filterOther p (a:as) (b:bs)
+  | p a = (b: filterOther p as bs)
+  | otherwise = filterOther p as bs
 
 -- =====================================================================
 
