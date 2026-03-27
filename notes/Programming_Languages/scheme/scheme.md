@@ -102,3 +102,10 @@ number?
 null?
 pair?
 list? returns true if arg is a list, runs in linear time.
+# data
+
+equal? if types are dif, return false
+usually good, except for equal numbers of different types
+
+use = instead of equal? for numeric equality
+
