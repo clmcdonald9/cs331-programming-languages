@@ -51,7 +51,8 @@ filterOther p (a:as) (b:bs)
 
 -- sublist
 sublist :: Eq a => [a] -> [a] -> Maybe Int
-sublist _ _ = Just 42  -- DUMMY; REWRITE THIS!!!
+sublist [] _ = Just 0
+
 
 
 -- =====================================================================
