@@ -52,6 +52,12 @@ filterOther p (a:as) (b:bs)
 -- sublist
 sublist :: Eq a => [a] -> [a] -> Maybe Int
 sublist [] _ = Just 0
+sublist (a:as) (b:bs) = findSublist (a:as) (b:bs) 0 where
+  findSublist (a:as) (b:bs) n
+    | (length(a:as)) > (length (b:bs)) = Nothing
+    | take (length (a:as)) (b:bs) == (a:as) = Just n
+    | 
+    otherwise = findSublist (a:as) bs (n + 1)
 
 
 
@@ -60,21 +66,5 @@ sublist [] _ = Just 0
 
 -- concatAlternate
 concatAlternate :: [String] -> (String, String)
-{-
-  The assignment requires concatAlternate to be written as a fold.
-  Like this:
-
-    concatAlternate xs = fold* ... xs  where
-        ...
-
-  Above, "..." needs to be replaced by other code. "fold*" must be one
-  of the following: foldl, foldr, foldl1, foldr1.
-
-  The code below will work, but it does not meet the above requirement.
-  So it would not be graded, if it were turned in.
--}
-
--- REWRITE THE FOLLOWING!!!
-concatAlternate [] = ("", "")
-concatAlternate (s:ss) = (s ++ b, a)  where
-    (a, b) = concatAlternate ss
+concatAlternate as = foldr helper ("","") as where
+  helper item (a, b) = (item ++ b, a)
