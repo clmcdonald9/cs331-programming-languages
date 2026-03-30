@@ -12,14 +12,47 @@
 
 module Main where
 
+-- next step:
+--      instead of adding to a list, 
+--      I want to just keep track of the minimum value
+
 import System.IO
 import Text.Read (readMaybe)
+handleInput :: String -> [Int] -> [Int]
+handleInput i list = 
+    case readMaybe i of
+        Nothing -> list
+        Just n -> list ++ [n]
+endLoop :: String -> [Int] -> IO [Int]
+endLoop input list
+    | input == " " = return list
+    | otherwise = do
+        let newList = handleInput input list
+        compareLists list newList where
+            compareLists as bs
+                | length as == length bs = do
+                    putStrLn "Only integer inputs will be added to the list."
+                    putStrLn ""
+                    loop as
+                | otherwise = do
+                    putStrLn $ "your list so far: " ++ show bs
+                    putStrLn ""
+                    loop bs
 
-handleInput -- I dunno what i doing and I scared :()
-
-main = do
-    putStr "enter a number or a space to end: "
+loop :: [Int] -> IO [Int]
+loop list = do
+    putStr "enter an integer, or a space to end: "
     hFlush stdout
     input <- getLine
-    handleInput input
+    endLoop input list
+
+minimumValue :: [Int] -> Int
+
+    
+
+main = do
+    result <- loop []
+    putStrLn $ "This is your finished list: " ++ show result
+    
+
     
