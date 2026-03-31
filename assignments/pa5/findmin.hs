@@ -18,41 +18,42 @@ module Main where
 
 import System.IO
 import Text.Read (readMaybe)
-handleInput :: String -> [Int] -> [Int]
-handleInput i list = 
-    case readMaybe i of
-        Nothing -> list
-        Just n -> list ++ [n]
-endLoop :: String -> [Int] -> IO [Int]
-endLoop input list
-    | input == " " = return list
-    | otherwise = do
-        let newList = handleInput input list
-        compareLists list newList where
-            compareLists as bs
-                | length as == length bs = do
-                    putStrLn "Only integer inputs will be added to the list."
-                    putStrLn ""
-                    loop as
-                | otherwise = do
-                    putStrLn $ "your list so far: " ++ show bs
-                    putStrLn ""
-                    loop bs
 
-loop :: [Int] -> IO [Int]
-loop list = do
+updateMin :: Int -> Maybe Int -> Maybe Int
+updateMin new Nothing = Just new
+updateMin new (Just old)
+    | new < old = Just new
+    | otherwise = Just old
+    
+
+
+loop :: Maybe Int -> IO (Maybe Int)
+loop currentMin = do
     putStr "enter an integer, or a space to end: "
     hFlush stdout
     input <- getLine
-    endLoop input list
+    checkInput input where
+        checkInput str
+            | str == " " = return currentMin
+            | otherwise = case readMaybe str of 
+                Nothing -> do
+                    putStrLn "only integer inputs are allowed"
+                    loop currentMin
+                Just n -> do
+                    let newMin = updateMin n currentMin
+                    loop newMin
+    -- ask to go again
 
-minimumValue :: [Int] -> Int
-
-    
+showMin :: Maybe Int -> IO ()
+showMin n = case n of
+    Nothing -> putStrLn "You did not enter any integers"
+    Just n -> do
+        putStr "The smallest entered integer is: "
+        putStrLn (show n)
 
 main = do
-    result <- loop []
-    putStrLn $ "This is your finished list: " ++ show result
-    
+    result <- loop Nothing
+    showMin result
+
 
     
