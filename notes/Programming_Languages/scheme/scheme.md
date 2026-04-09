@@ -109,3 +109,16 @@ usually good, except for equal numbers of different types
 
 use = instead of equal? for numeric equality
 
+Macros vs hygienic macros
+
+macros: specified code transformations that are known to the PL implementation
+
+hygienic macros: limit interactions between identifiers in a macro and outside the macro
+standard in scheme
+
+pattern based macro:
+code that matches a given pattern is transformed in  a manner that we specify, then evaluated
+
+single pattern macro defined with ``` define-syntax-rule```
+
+
