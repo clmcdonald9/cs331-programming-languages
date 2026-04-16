@@ -286,6 +286,35 @@ function interpit.interp(ast, state, util)
                 funcbody = { PROGRAM }
             end
             interp_program(funcbody)
+        elseif ast[1] == IF_STMT then
+            local i = 2
+
+            while i < #ast do
+                if i == #ast then
+                    interp_program(ast[i])
+                end
+                if eval_expr(ast[i]) ~= 0 then
+                    interp_program(ast[i+1])
+                end
+
+                i = i + 2
+            end
+
+        elseif ast[1] == WHILE_LOOP then
+            assert(#ast == 3)
+            print("*** UNIMPLEMENTED WHILE LOOP")
+            -- while eval_expr(ast[2]) ~= 0 do
+                -- interp_program(ast[3])
+            -- end
+        elseif ast[1] == ASSN_STMT then
+            assert(#ast == 3)
+            local value = eval_expr(ast[3])
+
+            if ast[2][1] == SIMPLE_VAR then
+                state.v[ast[2][2]] = value
+            else
+                print("*** UNIMPLEMENTED ASSIGNMENT TO ARRAY ITEM")
+            end
         else
             print("*** UNIMPLEMENTED STATEMENT")
         end
@@ -331,6 +360,97 @@ function interpit.interp(ast, state, util)
         if ast[1] == NUMLIT_VAL then
             assert(#ast == 2)
             result = strToNum(ast[2])
+        elseif ast[1] == SIMPLE_VAR then
+            assert(#ast == 2)
+            result = state.v[ast[2]]
+            if result == nil then
+                result = 0
+            end
+
+        elseif ast[1] == ARRAY_VAR then
+            assert(#ast == 3)
+            local arrayname = ast[2]
+        elseif type(ast[1]) == "table" and ast[1][1] == BIN_OP then
+            assert(#ast == 3)
+            local op = ast[1][2]
+            local left = eval_expr(ast[2])
+            local right = eval_expr(ast[3])
+
+            if op == "+" then
+                result = numToInt(left + right)
+
+            elseif op == "-" then
+                result = numToInt(left - right)
+
+            elseif op == "*" then
+                result = numToInt(left * right)
+
+            elseif op == "/" then
+                if right ~= 0 then
+                    result = numToInt(left / right)
+
+                else
+                    result = 0
+
+                end
+            elseif op == "%" then
+                if right ~= 0 then
+                    result = numToInt(left % right)
+
+                else
+                    result = 0
+
+                end
+            elseif op == "==" then
+                result = boolToInt(left == right)
+
+            elseif op == "!=" then
+                result = boolToInt(left ~= right)
+
+            elseif op == "<" then
+                result = boolToInt(left < right)
+
+            elseif op == "<=" then
+                result = boolToInt(left <= right)
+
+            elseif op == ">" then
+                result = boolToInt(left > right)
+
+            elseif op == ">=" then
+                result = boolToInt(left >= right)
+
+            elseif op == "&&" then
+                result = boolToInt((left ~= 0) and (right ~= 0))
+
+            elseif op == "||" then
+                result = boolToInt((left ~= 0) or (right ~= 0))
+
+            else
+                print("*** UNIMPLEMENTED BINARY OPERATOR")
+                result = 999999999  -- DUMMY VALUE
+
+            end
+        elseif type(ast[1]) == "table" and ast[1][1] == UN_OP then
+            assert(#ast == 2)
+            local op = ast[1][2]
+            local value = eval_expr(ast[2])
+
+            if op == "+" then
+                result = numToInt(value)
+
+            elseif op == "-" then
+                result = numToInt(-value)
+
+            elseif op == "!" then
+                result = boolToInt(value == 0)
+            else
+                print("*** UNIMPLEMENTED UNARY OPERATOR")
+                result = 999999999  -- DUMMY VALUE
+            end
+
+        elseif ast[1] == READ_CALL then
+            assert(#ast == 1)
+            result = strToNum(util.input())
         else
             print("*** UNIMPLEMENTED EXPRESSION")
             result = 999999999  -- DUMMY VALUE
