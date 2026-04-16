@@ -9,7 +9,7 @@
 
 
 -- This module was written using Professor Glenn G. Chappells 
--- interpit.lua skeleton as a base
+-- interpit.lua skeleton
 
 
 -- *********************************************************************
